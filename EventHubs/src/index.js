@@ -2,8 +2,8 @@
 //           Function to read from an Azure EventHubs to SumoLogic               //
 ///////////////////////////////////////////////////////////////////////////////////
 
-var sumoHttp = require('./sumoclient');
-var dataTransformer = require('./datatransformer');
+import { SumoClient } from './sumoclient';
+import { Transformer } from './datatransformer';
 var sumoClient;
 
 function setSourceCategory(context, msg) {
@@ -12,12 +12,12 @@ function setSourceCategory(context, msg) {
     // }
 }
 
-module.exports = function (context, eventHubMessages) {
+export default function (context, eventHubMessages) {
     //var options ={ 'urlString':process.env.APPSETTING_SumoSelfEventHubBadEndpoint,'metadata':{}, 'MaxAttempts':3, 'RetryInterval':3000,'compress_data':true};
     var options ={ 'urlString':process.env.APPSETTING_SumoLogsEndpoint,'metadata':{}, 'MaxAttempts':3, 'RetryInterval':3000,'compress_data':true};
 
-    sumoClient = new sumoHttp.SumoClient(options,context,failureHandler,successHandler);
-    var transformer = new dataTransformer.Transformer();
+    sumoClient = new SumoClient(options,context,failureHandler,successHandler);
+    var transformer = new Transformer();
     var messageArray = transformer.azureAudit(eventHubMessages);
     messageArray.forEach( msg => {
         setSourceCategory(context, msg);

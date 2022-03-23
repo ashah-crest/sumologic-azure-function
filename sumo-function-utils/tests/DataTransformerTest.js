@@ -3,29 +3,27 @@
  */
 
 
-var transformer = require('../lib/datatransformer');
-var chai = require('chai');
-var expect = chai.expect;
-var mocha = require('mocha')
-var assert = chai.assert;
-chai.should();
+import { Transformer } from '../lib/datatransformer.js';
+import { expect as _expect, should } from 'chai';
+var expect = _expect;
+should();
 
 
 describe('DataTransformerTest',function () {
-    var myTransformer = new transformer.Transformer();
-    var testInput;
-    var testMessageCount = 10;
-    var testBlobCount = 3;
+    let myTransformer = new Transformer();
+    let testInput;
+    let testMessageCount = 10;
+    let testBlobCount = 3;
 
     beforeEach( function(){
         testInput=[];
-        for (var j = 0; j<testBlobCount; j++ ) {
-            var tmp_buff = [];
-            for (var i = 0; i < testMessageCount; i++) {
+        for (let j = 0; j<testBlobCount; j++ ) {
+            let tmp_buff = [];
+            for (let i = 0; i < testMessageCount; i++) {
                 let sourceCat = Math.ceil(Math.random() * 10);
-                tmp_buff.push({'_sumo_metadata': {'category': sourceCat}, 'value': i});
+                tmp_buff.push({_sumo_metadata: {category: sourceCat}, value: i});
             }
-            testInput.push({"records":tmp_buff});
+            testInput.push({records:tmp_buff});
         }
     });
 
@@ -37,5 +35,5 @@ describe('DataTransformerTest',function () {
         expect(myTransformer.azureAudit(testInput).length).to.equal(testMessageCount*testBlobCount);
     });
 
-})
+});
 

@@ -5,43 +5,35 @@
  * @param headers object contains all the headersObj
  **/
 
-function MessageBucket(headers) {
-    this.headersObj = headers;
-    // core queue to store elements
-    this.queue = new Array(0);
+export class MessageBucket {
+    constructor(headers) {
+        this.headersObj = headers;
+        // core queue to store elements
+        this.queue = new Array(0);
+    }
+    getSize() {
+        return this.queue.length;
+    }
+    getHeadersObject() {
+        return this.headersObj;
+    }
+    setHeadersObject(headers) {
+        this.headersObj = headers;
+    }
+    /**
+     * Evic and return the first element if buffer is not empty, return null otherwise.
+     * @returns {*}
+     */
+    remove() {
+        if (this.queue.length > 0) {
+            let element = this.queue.shift();
+            return element;
+        } else {
+            return null;
+        }
+    }
+    // add an element to this bucket
+    add(elm) {
+        this.queue.push(elm);
+    }
 }
-
-MessageBucket.prototype.getSize = function() {
-    return this.queue.length;
-};
-
-MessageBucket.prototype.getHeadersObject = function() {
-    return this.headersObj;
-};
-
-MessageBucket.prototype.setHeadersObject = function(headers) {
-    this.headersObj = headers;
-};
-
-
-/**
- * Evic and return the first element if buffer is not empty, return null otherwise.
- * @returns {*}
- */
-MessageBucket.prototype.remove= function () {
-    if (this.queue.length>0) {
-        let element = this.queue.shift();
-        return element;
-    } else return null;
-};
-
-// add an element to this bucket
-MessageBucket.prototype.add = function(elm) {
-    this.queue.push(elm);
-};
-
-module.exports = {
-    MessageBucket:MessageBucket
-};
-
-

@@ -1,15 +1,19 @@
 {
   "name": "sumo-function-utils",
+  "type": "module",
   "version": "0.0.1",
   "description": "This is an utility package for Sumo Logic Inc.",
   "license": "Apache",
-  "files": ["./lib"],
+  "files": [
+    "./lib"
+  ],
   "main": "./lib/mainindex",
   "devDependencies": {
-    "chai": "*",
-    "mocha": "*",
-    "https":"*",
-    "zlib":"*",
-    "url":"*"
+    "chai": "^4.3.4",
+    "https": "*",
+    "mocha": "^9.1.3",
+    "url": "*",
+    "zlib": "*",
+    "needle": "^3.0.0"
   }
 }

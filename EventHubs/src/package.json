@@ -1,5 +1,6 @@
 {
-  "name": "EventHubs",
+  "name": "event-hubs",
+  "type": "module",
   "version": "1.0.0",
   "description": "Azure function for reading data from EventHub and then forward it to Sumo collector HTTP endpoint.",
   "main": "index.js",

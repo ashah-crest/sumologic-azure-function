@@ -11,18 +11,30 @@
  * @param {Array} fnParams - list of params to pass to the function
  * @returns {Promise} - A promise that resolves to the final result
  */
+async function retryMax(fn, retry, interval, fnParams){
+    return fn.apply(this,fnParams).catch( err => {
+        return (retry>1? Promise.wait(interval).then(()=> Promise.retryMax(fn,retry-1,interval, fnParams)):new Error(err));
+    });
+}
 
 Promise.retryMax = function(fn,retry,interval,fnParams) {
     return fn.apply(this,fnParams).catch( err => {
         return (retry>1? Promise.wait(interval).then(()=> Promise.retryMax(fn,retry-1,interval, fnParams)):Promise.reject(err));
     });
-}
+};
 
 /**
  * Promise to run after some delay
  * @param {number} delay - delay in millisecs
  * @returns {Promise}
  */
+async function wait(delay){
+    let promise = new Promise((fulfill, reject) => {
+        setTimeout(() => fulfill, delay);
+      });
+    await promise;
+}
+
 Promise.wait = function(delay) {
     return new Promise((fulfill,reject)=> {
         //console.log(Date.now());
@@ -46,10 +58,8 @@ Promise.retryTillTimeout = function(fn, timeLimit,interval,fnParams) {
         });
     }
     return mainLoop();
-}
+};
 
-module.exports = {
-    "p_retryMax" : Promise.retryMax,
-    "p_wait" : Promise.wait,
-    "p_retryTillTimeout" : Promise.retryTillTimeout
-}
+export const p_retryMax = Promise.retryMax;
+export const p_wait = Promise.wait;
+export const p_retryTillTimeout = Promise.retryTillTimeout;

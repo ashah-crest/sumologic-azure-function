@@ -3,8 +3,8 @@
 //           Function to read from an Azure EventHubs to SumoLogic               //
 ///////////////////////////////////////////////////////////////////////////////////
 
-var sumoMetricHttp = require('./sumometricclient');
-var dataTransformer = require('./datatransformer');
+import { SumoMetricClient } from './sumometricclient';
+import { Transformer } from './datatransformer';
 var sumoClient;
 
 function isMetricData(msg) {
@@ -32,12 +32,12 @@ function selectStatsForMetric(msg) {
 
 }
 
-module.exports = function (context, eventHubMessages) {
+export default function (context, eventHubMessages) {
     //var options ={ 'urlString':process.env.APPSETTING_SumoSelfEventHubBadEndpoint,'metadata':{}, 'MaxAttempts':3, 'RetryInterval':3000,'compress_data':true};
     var options ={ 'urlString':process.env.APPSETTING_SumoLabsMetricEndpoint,'metadata':{}, 'MaxAttempts':3, 'RetryInterval':3000,'compress_data':true, 'metric_type':'carbon20'};
 
-    sumoMetricClient = new sumoMetricHttp.SumoMetricClient(options,context,failureHandler,successHandler);
-    var transformer = new dataTransformer.Transformer();
+    sumoMetricClient = new SumoMetricClient(options,context,failureHandler,successHandler);
+    var transformer = new Transformer();
     var messageArray = transformer.azureAudit(eventHubMessages);
     var azureMetricArray = [];
     var logRawArray = [];

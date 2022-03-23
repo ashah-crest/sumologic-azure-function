@@ -2,17 +2,15 @@
 //           Function to read from an Azure EventHubs to SumoLogic               //
 ///////////////////////////////////////////////////////////////////////////////////
 
-var sumoHttp = require('./sumoclient');
-var dataTransformer = require('./datatransformer');
-var storage = require('azure-storage');
-var storageManagementClient = require('azure-arm-storage');
-var MsRest = require('ms-rest-azure');
-var servicebus = require('azure-sb');
+import { SumoClient } from './sumoclient';
+import { createBlobService } from 'azure-storage';
+import storageManagementClient from 'azure-arm-storage';
+import { loginWithAppServiceMSI } from 'ms-rest-azure';
+import { createServiceBusService } from 'azure-sb';
 var DEFAULT_CSV_SEPARATOR = ",";
 var MAX_CHUNK_SIZE = 1024;
 var JSON_BLOB_HEAD_BYTES = 12;
 var JSON_BLOB_TAIL_BYTES = 2;
-var https = require('https');
 
 function csvToArray(strData, strDelimiter) {
     strDelimiter = (strDelimiter || ",");
@@ -101,15 +99,15 @@ function getcsvHeader(containerName, blobName, context, blobService) {
 }
 
 function csvHandler(msgtext, headers) {
-    var messages = csvToArray(msgtext, DEFAULT_CSV_SEPARATOR);
-    var messageArray = [];
+    let messages = csvToArray(msgtext, DEFAULT_CSV_SEPARATOR);
+    let messageArray = [];
     if (headers.length > 0 && messages.length > 0 && messages[0].length > 0 && headers[0] === messages[0][0]) {
         messages = messages.slice(1); //removing header row
     }
-    messages.forEach(function (row) {
+    messages.forEach(row => {
         if (row.length === headers.length) {
-            var msgobj = {};
-            for (var i = headers.length - 1; i >= 0; i--) {
+            let msgobj = {};
+            for (let i = headers.length - 1; i >= 0; i--) {
                 msgobj[headers[i]] = row[i];
             }
             messageArray.push(msgobj);
@@ -119,12 +117,12 @@ function csvHandler(msgtext, headers) {
 }
 
 function nsgLogsHandler(jsonArray) {
-    var splitted_tuples, eventsArr = [];
-    jsonArray.forEach(function (record) {
+    var eventsArr = [];
+    jsonArray.forEach(record=> {
         version = record.properties.Version;
-        record.properties.flows.forEach(function (rule) {
-            rule.flows.forEach(function (flow) {
-                flow.flowTuples.forEach(function (tuple) {
+        record.properties.flows.forEach(rule => {
+            rule.flows.forEach(flow => {
+                flow.flowTuples.forEach(tuple => {
                     col = tuple.split(",");
                     event = {
                         time: col[0], // this should be epoch time
@@ -149,7 +147,7 @@ function nsgLogsHandler(jsonArray) {
                         bytes_sent_dest_to_src: null
                         // nsg_name:
                         // resource_group_name:
-                    }
+                    };
                     if (version === 2) {
                         event.flow_state = (col[8] === "" || col[8] === undefined) ?  null : col[8];
                         event.num_packets_sent_src_to_dest = (col[9] === "" || col[9] === undefined) ?  null : col[9];
@@ -158,9 +156,9 @@ function nsgLogsHandler(jsonArray) {
                         event.bytes_sent_dest_to_src = (col[12] === "" || col[12] === undefined) ?  null : col[12];
                     }
                     eventsArr.push(event);
-                })
-            })
-        })
+                });
+            });
+        });
     });
     return eventsArr;
 }
@@ -200,7 +198,7 @@ function getData(task, blobService, context) {
     var options = {rangeStart: task.startByte, rangeEnd: task.endByte};
 
     return new Promise(function (resolve, reject) {
-        blobService.getBlobToText(containerName, blobName, options, function (err, blobContent, blob) {
+        blobService.getBlobToText(containerName, blobName, options, function (err, blobContent) {
             if (err) {
                 reject(err);
             } else {
@@ -214,7 +212,7 @@ function getData(task, blobService, context) {
 function getToken() {
     var options = {msiEndpoint: process.env.MSI_ENDPOINT, msiSecret: process.env.MSI_SECRET};
     return new Promise(function (resolve, reject) {
-        MsRest.loginWithAppServiceMSI(options, function (err, tokenResponse) {
+        loginWithAppServiceMSI(options, function (err, tokenResponse) {
             if (err) {
                 reject(err);
             } else {
@@ -239,7 +237,7 @@ function getStorageAccountAccessKey(task) {
 function getBlockBlobService(context, task) {
 
     return getStorageAccountAccessKey(task).then(function (accountKey) {
-        var blobService = storage.createBlobService(task.storageName, accountKey);
+        var blobService = createBlobService(task.storageName, accountKey);
         return blobService;
     });
 
@@ -278,7 +276,7 @@ function messageHandler(serviceBusTask, context, sumoClient) {
                     context.log("Received headers %d", headers.length);
                     messageArray = msghandler[file_ext](msg, headers);
                     // context.log("Transformed data %s", JSON.stringify(messageArray));
-                    messageArray.forEach(function (msg) {
+                    messageArray.forEach(msg => {
                         sumoClient.addData(msg);
                     });
                     sumoClient.flushAll();
@@ -288,7 +286,7 @@ function messageHandler(serviceBusTask, context, sumoClient) {
                 });
             } else {
                 messageArray = msghandler[file_ext](msg);
-                messageArray.forEach(function (msg) {
+                messageArray.forEach(msg => {
                     sumoClient.addData(msg);
                 });
                 sumoClient.flushAll();
@@ -340,7 +338,7 @@ function servicebushandler(context, serviceBusTask) {
         }
     }
 
-    sumoClient = new sumoHttp.SumoClient(options, context, failureHandler, successHandler);
+    sumoClient = new SumoClient(options, context, failureHandler, successHandler);
     messageHandler(serviceBusTask, context, sumoClient);
 
 }
@@ -350,7 +348,7 @@ function timetriggerhandler(context, timetrigger) {
     if (timetrigger.isPastDue) {
         context.log("timetriggerhandler running late");
     }
-    var serviceBusService = servicebus.createServiceBusService(process.env.APPSETTING_TaskQueueConnectionString);
+    var serviceBusService = createServiceBusService(process.env.APPSETTING_TaskQueueConnectionString);
     serviceBusService.receiveQueueMessage(process.env.APPSETTING_TASKQUEUE_NAME + '/$DeadLetterQueue', {isPeekLock: true}, function (error, lockedMessage) {
         if (!error) {
             var serviceBusTask = JSON.parse(lockedMessage.body);
@@ -389,7 +387,7 @@ function timetriggerhandler(context, timetrigger) {
                     }
                 }
             }
-            sumoClient = new sumoHttp.SumoClient(options, context, failureHandler, successHandler);
+            sumoClient = new SumoClient(options, context, failureHandler, successHandler);
             messageHandler(serviceBusTask, context, sumoClient);
 
         } else {
@@ -405,11 +403,11 @@ function timetriggerhandler(context, timetrigger) {
     });
 }
 
-module.exports = function (context, triggerData) {
+export default function (context, triggerData) {
 
    if (triggerData.isPastDue === undefined) {
         servicebushandler(context, triggerData);
     } else {
         timetriggerhandler(context, triggerData);
     }
-};
+}

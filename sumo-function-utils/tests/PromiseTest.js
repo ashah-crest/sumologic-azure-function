@@ -2,11 +2,10 @@
  * Created by duc on 6/30/17.
  */
 
-var chai = require('chai');
-var expect = chai.expect;
-var mocha = require('mocha');
-var sumoutils = require('../lib/sumoutils');
-chai.should();
+import { expect as _expect, should } from 'chai';
+var expect = _expect;
+import { p_retryMax, p_retryTillTimeout } from '../lib/sumoutils.js';
+should();
 
 describe('PromiseTest',function () {
 
@@ -16,17 +15,17 @@ describe('PromiseTest',function () {
     });
 
     it('Retry should work when task fails', function (done) {
-        var actualRetry = 0;
+        let actualRetry = 0;
 
         function genTask() {
             return new Promise((fulfill, reject) => {
                 actualRetry++;
                 console.log("Actual Retry:"+actualRetry);
-                reject({"message": "fail by design"});
+                reject({message: "fail by design"});
             });
         }
 
-        sumoutils.p_retryMax(genTask, 5, 100).then(() => {
+        p_retryMax(genTask, 5, 100).then(() => {
             expect(true).to.equal(false);
         }).catch((err) => {
             console.log("Task failed as expected:" + JSON.stringify(err));
@@ -35,17 +34,17 @@ describe('PromiseTest',function () {
     });
 
     it('Retry should work when task succeed', function (done) {
-        var actualRetry = 0;
+        let actualRetry = 0;
 
         function genTask() {
             return new Promise((fulfill, reject) => {
                 actualRetry++;
-                if (actualRetry == 3) fulfill({"message": "succeed by design"});
-                else reject({'message': 'failed: ' + actualRetry});
+                if (actualRetry == 3) fulfill({message: "succeed by design"});
+                else reject({message: 'failed: ' + actualRetry});
             });
         }
 
-        sumoutils.p_retryMax(genTask, 5, 100).then(() => {console.log("Succeeded as expected!");
+        p_retryMax(genTask, 5, 100).then(() => {console.log("Succeeded as expected!");
             expect(actualRetry).to.lessThan(5);
         }).catch((err) => {
             console.log('Caught a failure, unexpected!' + JSON.stringify(err));
@@ -55,17 +54,16 @@ describe('PromiseTest',function () {
 
 
     it('RetryTillTimeout should work when task fails', function (done) {
-        var startTime = Date.now();
-        var elapsedTime = 0;
+        let startTime = Date.now();
 
         function genTask() {
             return new Promise((fulfill, reject) => {
                 console.log("Testing function called");
-                reject({"message":"fail by design"});
+                reject({message:"fail by design"});
             });
         }
 
-        sumoutils.p_retryTillTimeout(genTask, 1000, 100).then(() => {
+        p_retryTillTimeout(genTask, 1000, 100).then(() => {
             expect(true).to.equal(false);
         }).catch((err) => {
             console.log("Task failed as expected:" + JSON.stringify(err));
@@ -74,18 +72,17 @@ describe('PromiseTest',function () {
     });
 
     it('RetryTillTimeout should work when task succeed in time', function (done) {
-        var startTime = Date.now();
-        var elapsedTime = 0;
+        let startTime = Date.now();
 
         function genTask() {
             return new Promise((fulfill, reject) => {
                 if (Date.now() - startTime < 500 ) {
-                    reject({"message": "fail by design"});
+                    reject({message: "fail by design"});
                 } else fulfill();
             });
         }
 
-        sumoutils.p_retryTillTimeout(genTask, 1000, 100).then(() => {
+        p_retryTillTimeout(genTask, 1000, 100).then(() => {
             console.log("Succeeded after: "+(Date.now()-startTime) + " msecs");
             expect(Date.now() - startTime).to.lessThan(1000);
         }).catch((err) => {
